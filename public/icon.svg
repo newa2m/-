@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="digitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+  </defs>
+  <!-- Background squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#334155" stroke-width="4" opacity="0.6" />
+  
+  <!-- Counter Display Screen Box -->
+  <rect x="76" y="90" width="360" height="150" rx="24" fill="#020617" stroke="#1e293b" stroke-width="6" />
+  
+  <!-- Digital counter notches / digits -->
+  <text x="256" y="195" font-family="'JetBrains Mono', 'Cairo', monospace" font-size="88" font-weight="bold" fill="#38bdf8" text-anchor="middle" letter-spacing="4">842</text>
+  
+  <!-- Status badge on counter -->
+  <circle cx="110" cy="125" r="8" fill="#10b981" />
+  <circle cx="132" cy="125" r="8" fill="#f59e0b" />
+
+  <!-- Plus / Minus Tactile Buttons -->
+  <!-- Plus Button -->
+  <g transform="translate(286, 280)">
+    <rect width="150" height="130" rx="28" fill="url(#accentGrad)" filter="drop-shadow(0 8px 16px rgba(16, 185, 129, 0.35))" />
+    <path d="M75 35 V95 M45 65 H105" stroke="#ffffff" stroke-width="12" stroke-linecap="round" />
+  </g>
+  
+  <!-- Minus Button -->
+  <g transform="translate(76, 280)">
+    <rect width="150" height="130" rx="28" fill="#334155" />
+    <path d="M45 65 H105" stroke="#f8fafc" stroke-width="12" stroke-linecap="round" />
+  </g>
+  
+  <!-- Bottom tactile indicator bar -->
+  <rect x="180" y="445" width="152" height="8" rx="4" fill="#475569" opacity="0.8" />
+</svg>

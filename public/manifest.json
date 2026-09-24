@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "name": "عداد الجرد والكميات الاحترافي",
+  "short_name": "عداد الجرد",
+  "description": "تطبيق أندرويد احترافي وسريع لإدارة القوائم والكميات والعدادات في الجرد والمخازن والتشطيبات والمشتريات.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#1e293b",
+  "dir": "rtl",
+  "lang": "ar",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
