@@ -1,30 +1,369 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, :where(.dark *)));
+
+:root {
+  --radius-factor: 1rem;
+  --font-sans: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Default Theme: Warm Beige & Walnut (درجات البيج والبني الدافئ الطبيعي) */
+  --app-bg: #FAF7F2;
+  --app-surface: #FFFFFF;
+  --app-surface-muted: #F3ECE3;
+  --app-border: #E5DCD0;
+  --app-border-hover: #D5C9B8;
+  --app-text: #382B22;
+  --app-text-muted: #7A6657;
+  --app-navbar-bg: #2C1F17;
+  --app-navbar-border: #3D2C21;
+  --color-primary: #8C532B;
+  --color-primary-hover: #754422;
+  --color-primary-light: #F3ECE3;
+  --color-primary-glow: rgba(140, 83, 43, 0.25);
+  --color-secondary: #3D2A1D;
+  --color-success: #4A7C59;
+  --color-danger: #BA4336;
+}
+
+/* ==========================================================================
+   1. Theme: Beige & Walnut (درجات البيج والبني الدافئ - ألوان الورق والطبيعة)
+   ========================================================================== */
+[data-theme="beige"],
+:root:not([data-theme]),
+[data-theme="turquoise"] {
+  --app-bg: #FAF7F2;
+  --app-surface: #FFFFFF;
+  --app-surface-muted: #F3ECE3;
+  --app-border: #E5DCD0;
+  --app-border-hover: #D5C9B8;
+  --app-text: #382B22;
+  --app-text-muted: #7A6657;
+  --app-navbar-bg: #2C1F17;
+  --app-navbar-border: #3D2C21;
+  --color-primary: #8C532B;
+  --color-primary-hover: #754422;
+  --color-primary-light: #F3ECE3;
+  --color-primary-glow: rgba(140, 83, 43, 0.25);
+  --color-secondary: #3D2A1D;
+  --color-success: #4A7C59;
+  --color-danger: #BA4336;
+}
+
+html.dark[data-theme="beige"],
+[data-theme="beige"].dark,
+html.dark[data-theme="turquoise"],
+[data-theme="turquoise"].dark {
+  --app-bg: #1B1510;
+  --app-surface: #261E18;
+  --app-surface-muted: #332820;
+  --app-border: #3D3128;
+  --app-border-hover: #4F3E33;
+  --app-text: #F5ECE3;
+  --app-text-muted: #BFAFA2;
+  --app-navbar-bg: #140E0A;
+  --app-navbar-border: #261B14;
+  --color-primary: #C4855C;
+  --color-primary-hover: #D4956C;
+  --color-primary-light: rgba(196, 133, 92, 0.18);
+  --color-primary-glow: rgba(196, 133, 92, 0.25);
+  --color-secondary: #0D0A08;
+}
+
+/* ==========================================================================
+   2. Theme: Pure Monochrome & Graphite (درجات الأسود والأبيض والرمادي المينيمال)
+   ========================================================================== */
+[data-theme="monochrome"],
+[data-theme="graphite"] {
+  --app-bg: #F4F4F6;
+  --app-surface: #FFFFFF;
+  --app-surface-muted: #E8E8ED;
+  --app-border: #DCDCE2;
+  --app-border-hover: #C5C5CE;
+  --app-text: #18181B;
+  --app-text-muted: #52525B;
+  --app-navbar-bg: #121214;
+  --app-navbar-border: #27272A;
+  --color-primary: #27272A;
+  --color-primary-hover: #18181B;
+  --color-primary-light: #E4E4E7;
+  --color-primary-glow: rgba(39, 39, 42, 0.25);
+  --color-secondary: #09090B;
+  --color-success: #16A34A;
+  --color-danger: #DC2626;
+}
+
+html.dark[data-theme="monochrome"],
+[data-theme="monochrome"].dark,
+html.dark[data-theme="graphite"],
+[data-theme="graphite"].dark {
+  --app-bg: #09090B;
+  --app-surface: #18181B;
+  --app-surface-muted: #222226;
+  --app-border: #2E2E33;
+  --app-border-hover: #3F3F46;
+  --app-text: #F4F4F5;
+  --app-text-muted: #A1A1AA;
+  --app-navbar-bg: #000000;
+  --app-navbar-border: #1E1E22;
+  --color-primary: #71717A;
+  --color-primary-hover: #A1A1AA;
+  --color-primary-light: rgba(113, 113, 122, 0.2);
+  --color-primary-glow: rgba(113, 113, 122, 0.25);
+  --color-secondary: #000000;
+}
+
+/* ==========================================================================
+   3. Theme: Calming Sage & Olive (درجات الزيتوني والمريمية الهادئ المريح للأعصاب)
+   ========================================================================== */
+[data-theme="sage"],
+[data-theme="emerald"] {
+  --app-bg: #F2F5F3;
+  --app-surface: #FFFFFF;
+  --app-surface-muted: #E5EFE7;
+  --app-border: #D3DFD5;
+  --app-border-hover: #BDD0C0;
+  --app-text: #1F2E22;
+  --app-text-muted: #4B634E;
+  --app-navbar-bg: #17261B;
+  --app-navbar-border: #253D2C;
+  --color-primary: #386641;
+  --color-primary-hover: #2D5234;
+  --color-primary-light: #E5EFE7;
+  --color-primary-glow: rgba(56, 102, 65, 0.25);
+  --color-secondary: #1B2E1E;
+  --color-success: #2E6F40;
+  --color-danger: #B93838;
+}
+
+html.dark[data-theme="sage"],
+[data-theme="sage"].dark,
+html.dark[data-theme="emerald"],
+[data-theme="emerald"].dark {
+  --app-bg: #101712;
+  --app-surface: #19241C;
+  --app-surface-muted: #243328;
+  --app-border: #2F4234;
+  --app-border-hover: #3E5745;
+  --app-text: #EBF2EC;
+  --app-text-muted: #A2B8A6;
+  --app-navbar-bg: #0B120D;
+  --app-navbar-border: #1A261D;
+  --color-primary: #599A69;
+  --color-primary-hover: #6BA87A;
+  --color-primary-light: rgba(89, 154, 105, 0.2);
+  --color-primary-glow: rgba(89, 154, 105, 0.25);
+  --color-secondary: #080E09;
+}
+
+/* ==========================================================================
+   4. Theme: Deep Slate & Navy (درجات الكحلي والرمادي المزرق الهادئ)
+   ========================================================================== */
+[data-theme="navy"] {
+  --app-bg: #F0F4F8;
+  --app-surface: #FFFFFF;
+  --app-surface-muted: #E2ECF7;
+  --app-border: #CBD5E1;
+  --app-border-hover: #94A3B8;
+  --app-text: #1E293B;
+  --app-text-muted: #475569;
+  --app-navbar-bg: #0F172A;
+  --app-navbar-border: #1E293B;
+  --color-primary: #2B5885;
+  --color-primary-hover: #1E4064;
+  --color-primary-light: #E2ECF7;
+  --color-primary-glow: rgba(43, 88, 133, 0.25);
+  --color-secondary: #0F172A;
+  --color-success: #10B981;
+  --color-danger: #EF4444;
+}
+
+html.dark[data-theme="navy"],
+[data-theme="navy"].dark {
+  --app-bg: #0B1120;
+  --app-surface: #151F32;
+  --app-surface-muted: #1D2B44;
+  --app-border: #273854;
+  --app-border-hover: #374D73;
+  --app-text: #EEF2F6;
+  --app-text-muted: #94A3B8;
+  --app-navbar-bg: #070C18;
+  --app-navbar-border: #131E33;
+  --color-primary: #4C82BA;
+  --color-primary-hover: #5E94CD;
+  --color-primary-light: rgba(76, 130, 186, 0.2);
+  --color-primary-glow: rgba(76, 130, 186, 0.25);
+  --color-secondary: #050810;
+}
+
+/* ==========================================================================
+   Comprehensive Theme Overrides: Apply across ALL elements in the app
+   ========================================================================== */
+
+/* Body and main canvas */
+body, #root {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+/* Background containers */
+.bg-\[\#F8FAFC\],
+.dark\:bg-\[\#0F172A\] {
+  background-color: var(--app-bg) !important;
+}
+
+/* Surface containers (cards, modals, dropdowns) */
+.bg-white,
+.dark\:bg-slate-900,
+.dark\:bg-slate-900\/90,
+.dark\:bg-slate-900\/95,
+.dark\:bg-slate-800 {
+  background-color: var(--app-surface) !important;
+}
+
+/* Secondary muted surfaces */
+.bg-slate-50,
+.bg-slate-50\/50,
+.bg-slate-50\/70,
+.bg-slate-50\/80,
+.bg-slate-50\/90,
+.bg-slate-100,
+.dark\:bg-slate-800\/30,
+.dark\:bg-slate-800\/40,
+.dark\:bg-slate-800\/50,
+.dark\:bg-slate-800\/60,
+.dark\:bg-slate-800\/70,
+.dark\:bg-slate-800\/80,
+.dark\:bg-slate-800\/90,
+.dark\:bg-slate-950,
+.dark\:bg-slate-950\/50,
+.dark\:bg-slate-950\/60,
+.dark\:bg-slate-950\/70,
+.dark\:bg-slate-950\/80 {
+  background-color: var(--app-surface-muted) !important;
+}
+
+/* Top Navbar Header & Toolbars */
+header.bg-slate-900,
+header {
+  background-color: var(--app-navbar-bg) !important;
+  border-bottom-color: var(--app-navbar-border) !important;
+}
+
+div.bg-slate-900.border-b {
+  background-color: var(--app-navbar-bg) !important;
+  border-bottom-color: var(--app-navbar-border) !important;
+}
+
+/* Primary theme text & borders */
+.border-slate-100,
+.border-slate-200,
+.border-slate-200\/80,
+.border-slate-200\/90,
+.border-slate-300,
+.border-slate-700,
+.border-slate-700\/60,
+.border-slate-700\/70,
+.border-slate-700\/80,
+.border-slate-800,
+.border-slate-800\/60 {
+  border-color: var(--app-border) !important;
+}
+
+.text-slate-900,
+.text-\[\#0F172A\],
+.dark\:text-slate-100,
+.dark\:text-white {
+  color: var(--app-text) !important;
+}
+
+.text-slate-500,
+.text-slate-600,
+.dark\:text-slate-400,
+.dark\:text-slate-300 {
+  color: var(--app-text-muted) !important;
+}
+
+/* Primary Brand Accent Elements */
+.bg-\[\#00B8C4\],
+button.bg-\[\#00B8C4\],
+.bg-brand-primary {
+  background-color: var(--color-primary) !important;
+  color: #FFFFFF !important;
+}
+
+.hover\:bg-\[\#009DA8\]:hover {
+  filter: brightness(0.9) !important;
+}
+
+.text-\[\#00B8C4\],
+.text-brand-primary {
+  color: var(--color-primary) !important;
+}
+
+.border-\[\#00B8C4\],
+.border-brand-primary {
+  border-color: var(--color-primary) !important;
+}
+
+.accent-\[\#00B8C4\] {
+  accent-color: var(--color-primary) !important;
+}
+
+.focus\:ring-\[\#00B8C4\]:focus,
+.ring-\[\#00B8C4\] {
+  --tw-ring-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.bg-\[\#E6F9FA\] {
+  background-color: var(--color-primary-light) !important;
+}
+
+.border-\[\#00B8C4\]\/30 {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent) !important;
+}
+
+.hover\:border-\[\#00B8C4\]:hover {
+  border-color: var(--color-primary) !important;
+}
+
+.group:hover .group-hover\:text-\[\#00B8C4\] {
+  color: var(--color-primary) !important;
+}
+
+/* Design Styles (Sharp / Modern / Tactile) */
+[data-style="sharp"] .rounded-xl,
+[data-style="sharp"] .rounded-2xl,
+[data-style="sharp"] .rounded-3xl,
+[data-style="sharp"] button,
+[data-style="sharp"] input {
+  border-radius: 4px !important;
+}
+
+[data-style="tactile"] button {
+  box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.15) !important;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.25) !important;
+}
+[data-style="tactile"] button:active {
+  transform: translateY(2px) scale(0.98);
+  border-bottom-width: 1px !important;
+}
+
 @layer base {
-  :root {
-    --font-sans: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     font-family: var(--font-sans);
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-    -webkit-user-select: none;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Touch responsiveness utilities */
-.touch-manipulation {
-  touch-action: manipulation;
-}
-
-/* Tabular numbers for clean vertical alignment of counters */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Custom smooth scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -33,17 +372,18 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+  background: var(--app-border);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.6);
+  background: var(--app-text-muted);
 }
 
-/* Safe area padding for mobile notches and gesture bars */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 1rem);
+/* Utility to hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-.pt-safe {
-  padding-top: env(safe-area-inset-top, 0.5rem);
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

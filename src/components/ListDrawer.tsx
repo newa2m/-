@@ -12,7 +12,8 @@ import {
   ChevronDown,
   GripVertical,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface ListDrawerProps {
@@ -20,6 +21,7 @@ interface ListDrawerProps {
   onClose: () => void;
   onOpenCreateList: () => void;
   onOpenEditList: (list: List) => void;
+  onOpenImportItems?: () => void;
 }
 
 export const ListDrawer: React.FC<ListDrawerProps> = ({
@@ -27,6 +29,7 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
   onClose,
   onOpenCreateList,
   onOpenEditList,
+  onOpenImportItems,
 }) => {
   const {
     lists,
@@ -96,17 +99,29 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
             </button>
           </div>
 
-          {/* New List Button */}
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+          {/* New List & Import Actions */}
+          <div className="p-3.5 border-b border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
             <button
               onClick={() => {
                 onClose();
                 onOpenCreateList();
               }}
-              className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all"
+              className="py-2.5 px-3 rounded-xl bg-[#00B8C4] hover:bg-[#009DA8] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-all border border-[#00B8C4]"
             >
-              <Plus className="w-4 h-4" />
-              <span>إنشاء قائمة جديدة</span>
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>قائمة جديدة</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onClose();
+                onOpenImportItems?.();
+              }}
+              className="py-2.5 px-3 rounded-xl bg-[#E6F9FA] hover:bg-[#d0f4f7] dark:bg-slate-800 dark:hover:bg-slate-700 text-[#00B8C4] border border-[#00B8C4]/30 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-98 transition-all"
+              title="استيراد قائمة جرد جديدة متكاملة من ملف CSV أو نصي"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-[#00B8C4]" />
+              <span>استيراد قائمة</span>
             </button>
           </div>
 
@@ -125,7 +140,7 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
                   onDragEnd={handleDragEnd}
                   className={`group relative rounded-2xl p-3.5 border transition-all cursor-pointer flex items-center gap-3 ${
                     isActive
-                      ? 'bg-blue-50/70 border-blue-400 dark:bg-blue-950/30 dark:border-blue-500/60 shadow-sm'
+                      ? 'bg-[#E6F9FA] border-[#00B8C4] dark:bg-[#00B8C4]/15 dark:border-[#00B8C4] shadow-sm'
                       : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
                   }`}
                   onClick={() => handleSelect(l.id)}
@@ -151,7 +166,7 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
                         {l.name}
                       </h4>
                       {isActive && (
-                        <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                        <span className="w-2 h-2 rounded-full bg-[#00B8C4] shrink-0" />
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -192,7 +207,7 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
                         onClose();
                         onOpenEditList(l);
                       }}
-                      className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
+                      className="p-2 rounded-lg text-slate-400 hover:text-[#00B8C4] hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
                       title="تعديل اسم ولون القائمة"
                     >
                       <Edit2 className="w-4 h-4" />
@@ -202,7 +217,7 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => duplicateList(l.id)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
+                      className="p-2 rounded-lg text-slate-400 hover:text-[#10B981] hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
                       title="نسخ القائمة كاملة"
                     >
                       <Copy className="w-4 h-4" />
@@ -212,7 +227,7 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => setListToDelete(l)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                      className="p-2 rounded-lg text-slate-400 hover:text-[#EF4444] hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                       title="حذف القائمة"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -234,7 +249,7 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
       {listToDelete && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
           <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-950/50 text-[#EF4444] dark:text-red-400 flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
@@ -257,7 +272,7 @@ export const ListDrawer: React.FC<ListDrawerProps> = ({
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/30"
+                className="py-2.5 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold shadow-md shadow-red-600/30"
               >
                 تأكيد الحذف
               </button>

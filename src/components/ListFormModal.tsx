@@ -95,7 +95,7 @@ export const ListFormModal: React.FC<ListFormModalProps> = ({
           {/* List Name */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              اسم القائمة <span className="text-rose-500">*</span>
+              اسم القائمة <span className="text-[#EF4444]">*</span>
             </label>
             <input
               type="text"
@@ -103,7 +103,7 @@ export const ListFormModal: React.FC<ListFormModalProps> = ({
               placeholder="مثال: جرد مواد البناء، تشطيبات الطابق الأول، مخزن القطع..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full py-2.5 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 outline-none"
+              className="w-full py-2.5 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:border-[#00B8C4] focus:bg-white dark:focus:bg-slate-800 outline-none"
               autoFocus
             />
           </div>
@@ -122,7 +122,7 @@ export const ListFormModal: React.FC<ListFormModalProps> = ({
                   title={c.label}
                   className={`w-8 h-8 rounded-full ${c.bg} transition-all transform flex items-center justify-center ${
                     color === c.id
-                      ? 'ring-4 ring-blue-500/30 ring-offset-2 dark:ring-offset-slate-900 scale-110 shadow'
+                      ? 'ring-4 ring-[#00B8C4]/40 ring-offset-2 dark:ring-offset-slate-900 scale-110 shadow'
                       : 'opacity-70 hover:opacity-100 hover:scale-105'
                   }`}
                 >
@@ -145,7 +145,7 @@ export const ListFormModal: React.FC<ListFormModalProps> = ({
                   onClick={() => setIcon(item.id)}
                   className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${
                     icon === item.id
-                      ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-950/40 dark:border-blue-400 dark:text-blue-300 shadow-sm font-semibold'
+                      ? 'bg-[#E6F9FA] border-[#00B8C4] text-[#008790] dark:bg-[#00B8C4]/20 dark:border-[#00B8C4] dark:text-[#00B8C4] shadow-sm font-semibold'
                       : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
@@ -170,7 +170,7 @@ export const ListFormModal: React.FC<ListFormModalProps> = ({
             <button
               type="submit"
               disabled={!name.trim()}
-              className="py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all disabled:opacity-50"
+              className="py-3 px-4 rounded-xl bg-[#00B8C4] hover:bg-[#009DA8] text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-[#00B8C4]/25 active:scale-95 transition-all disabled:opacity-50 border border-[#00B8C4]"
             >
               <Check className="w-4 h-4" />
               <span>{listToEdit ? 'حفظ التعديلات' : 'إنشاء القائمة'}</span>

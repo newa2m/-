@@ -23,7 +23,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, on
         className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4"
         onClick={e => e.stopPropagation()}
       >
-        <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-950/50 text-[#EF4444] dark:text-red-400 flex items-center justify-center mx-auto">
           <RotateCcw className="w-6 h-6" />
         </div>
 
@@ -48,7 +48,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, on
           <button
             type="button"
             onClick={handleConfirm}
-            className="py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md shadow-amber-600/30"
+            className="py-2.5 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold shadow-md shadow-red-600/30 active:scale-95 transition-all"
           >
             تأكيد التصفير
           </button>

@@ -1,4 +1,10 @@
-import { List } from '../types';
+import { List, Folder } from '../types';
+
+export const INITIAL_FOLDERS: Folder[] = [
+  { id: 'folder-plumbing', name: 'أعمال السباكة', color: 'cyan', createdAt: Date.now() - 86400000 * 3 },
+  { id: 'folder-finishes', name: 'تشطيبات وديكورات', color: 'emerald', createdAt: Date.now() - 86400000 * 2 },
+  { id: 'folder-warehouse', name: 'المستودع الرئيسي', color: 'amber', createdAt: Date.now() - 86400000 * 1 },
+];
 
 export const INITIAL_LISTS: List[] = [
   {
@@ -6,6 +12,7 @@ export const INITIAL_LISTS: List[] = [
     name: 'سباكة - تشطيب',
     color: 'cyan',
     icon: 'wrench',
+    folderId: 'folder-plumbing',
     order: 0,
     createdAt: Date.now() - 86400000 * 2,
     updatedAt: Date.now() - 3600000 * 1,

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { DebounceDelay } from '../types';
+import { DebounceDelay, THEME_PRESETS, ThemeId, DesignStyle } from '../types';
+import { feedback } from '../utils/feedback';
 import {
   Settings,
   X,
@@ -18,24 +19,25 @@ import {
   Check,
   Smartphone,
   FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
+  LayoutGrid,
+  List as ListIconLucide,
+  Clock,
+  Palette
 } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenExportModal?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
-  onOpenExportModal,
 }) => {
   const {
     settings,
     updateSettings,
-    exportActiveListCSV,
     exportAllDataJSON,
     importDataJSON,
     resetToDefaultData,
@@ -128,7 +130,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Section 1: Debounce Anti-Double Tap */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
-              <Shield className="w-4 h-4 text-blue-500" />
+              <Shield className="w-4 h-4 text-[#00B8C4]" />
               <span>الحماية من اللمسات الخاطئة (منع الضغطات المتكررة):</span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -140,16 +142,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   key={opt.value}
                   type="button"
                   onClick={() => updateSettings({ debounceDelay: opt.value })}
-                  className={`p-3 rounded-xl border text-right transition-all ${
+                  className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
                     settings.debounceDelay === opt.value
-                      ? 'bg-blue-50 border-blue-500 text-blue-900 dark:bg-blue-950/40 dark:border-blue-400 dark:text-blue-200 font-semibold shadow-sm'
+                      ? 'bg-[#E6F9FA] border-[#00B8C4] text-[#008790] dark:bg-[#00B8C4]/20 dark:border-[#00B8C4] dark:text-[#00B8C4] font-semibold shadow-sm'
                       : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold">{opt.label}</span>
                     {settings.debounceDelay === opt.value && (
-                      <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <Check className="w-3.5 h-3.5 text-[#00B8C4]" />
+                    )}
+                  </div>
+                  <span className="block text-[10px] text-slate-400 mt-1">
+                    {opt.desc}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="h-px bg-slate-100 dark:bg-slate-800" />
+
+          {/* Section: Long-Press Duration Setting */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+              <Clock className="w-4 h-4 text-[#10B981]" />
+              <span>مدة اللمس المطول (لتعديل العدادات والأرقام):</span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              تحديد زمن اللمس المستمر المطلوب لتفعيل نافذة الأرقام على (+) و (-) ورقم البند، مع ميزة منع التفعيل العرضي أثناء التمرير والسحب.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 800, label: '800 مللي ثانية', desc: 'متوازن' },
+                { value: 1000, label: '1000 مللي ثانية (1 ثانية)', desc: 'موصى به لمنع الفتح العرضي' },
+                { value: 1200, label: '1.2 ثانية', desc: 'حماية إضافية أثناء التمرير' },
+                { value: 1500, label: '1.5 ثانية', desc: 'طويل جداً للميدان والقفازات' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateSettings({ longPressDelay: opt.value })}
+                  className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+                    (settings.longPressDelay || 1000) === opt.value
+                      ? 'bg-[#10B981]/15 border-[#10B981] text-[#059669] dark:bg-[#10B981]/25 dark:border-[#10B981] dark:text-[#10B981] font-semibold shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold">{opt.label}</span>
+                    {(settings.longPressDelay || 1000) === opt.value && (
+                      <Check className="w-3.5 h-3.5 text-[#10B981]" />
                     )}
                   </div>
                   <span className="block text-[10px] text-slate-400 mt-1">
@@ -186,15 +230,69 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <input
                 type="checkbox"
                 checked={settings.hapticFeedback}
-                onChange={(e) => updateSettings({ hapticFeedback: e.target.checked })}
-                className="w-5 h-5 rounded accent-blue-600 cursor-pointer"
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  updateSettings({ hapticFeedback: checked });
+                  if (checked) {
+                    feedback.vibrate('tap', settings.hapticIntensity);
+                  }
+                }}
+                className="w-5 h-5 rounded accent-[#00B8C4] cursor-pointer"
               />
             </div>
+
+            {/* Haptic Intensity selector & Test Button */}
+            {settings.hapticFeedback && (
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+                    شدة الاهتزاز اللمسي:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback.playClick('tap');
+                      feedback.vibrate('tap', settings.hapticIntensity);
+                    }}
+                    className="py-1 px-2.5 rounded-lg bg-[#00B8C4]/15 hover:bg-[#00B8C4]/25 text-[#00B8C4] font-bold text-[11px] flex items-center gap-1 active:scale-95 transition-all cursor-pointer border border-[#00B8C4]/30"
+                  >
+                    <Vibrate className="w-3 h-3" />
+                    <span>تجربة الهزاز الآن ⚡</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 text-xs">
+                  {[
+                    { id: 'light', label: 'خفيف (35ms)' },
+                    { id: 'medium', label: 'متوسط (65ms)' },
+                    { id: 'strong', label: 'قوي للورش (110ms)' },
+                  ].map((lvl) => (
+                    <button
+                      key={lvl.id}
+                      type="button"
+                      onClick={() => {
+                        updateSettings({ hapticIntensity: lvl.id as any });
+                        feedback.vibrate('tap', lvl.id as any);
+                      }}
+                      className={`py-2 px-1 rounded-lg text-center font-bold transition-all cursor-pointer active:scale-95 ${
+                        settings.hapticIntensity === lvl.id
+                          ? 'bg-[#10B981] text-white shadow-xs'
+                          : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                      }`}
+                    >
+                      {lvl.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                  💡 يعمل الهزاز على أجهزة أندرويد وآيفون (iOS 17.4+). تأكد من تفعيل "اهتزاز اللمس / Haptic Feedback" في إعدادات الصوت العامة لجهازك.
+                </p>
+              </div>
+            )}
 
             {/* Sound click */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-[#E6F9FA] dark:bg-slate-800 text-[#00B8C4] flex items-center justify-center">
                   <Volume2 className="w-4 h-4" />
                 </div>
                 <div>
@@ -210,14 +308,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="checkbox"
                 checked={settings.soundFeedback}
                 onChange={(e) => updateSettings({ soundFeedback: e.target.checked })}
-                className="w-5 h-5 rounded accent-blue-600 cursor-pointer"
+                className="w-5 h-5 rounded accent-[#00B8C4] cursor-pointer"
               />
             </div>
 
             {/* Screen Wake Lock */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                   <Eye className="w-4 h-4" />
                 </div>
                 <div>
@@ -233,14 +331,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="checkbox"
                 checked={settings.keepScreenAwake}
                 onChange={(e) => updateSettings({ keepScreenAwake: e.target.checked })}
-                className="w-5 h-5 rounded accent-blue-600 cursor-pointer"
+                className="w-5 h-5 rounded accent-[#00B8C4] cursor-pointer"
               />
             </div>
 
             {/* Dark Mode */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                   {settings.darkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                 </div>
                 <div>
@@ -256,8 +354,150 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="checkbox"
                 checked={settings.darkMode}
                 onChange={(e) => updateSettings({ darkMode: e.target.checked })}
-                className="w-5 h-5 rounded accent-blue-600 cursor-pointer"
+                className="w-5 h-5 rounded accent-[#00B8C4] cursor-pointer"
               />
+            </div>
+
+            {/* View Mode: Comfortable vs Compact */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <LayoutGrid className="w-4 h-4 text-[#00B8C4]" />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    نمط عرض بطاقات الجرد:
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-400">
+                  {settings.viewMode === 'compact' ? 'عرض مدمج ومكثف' : 'عرض قياسي مريح'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ viewMode: 'comfortable' })}
+                  className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all cursor-pointer ${
+                    (settings.viewMode || 'comfortable') === 'comfortable'
+                      ? 'bg-[#00B8C4] text-white shadow-xs'
+                      : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>قياسي مريح (Comfortable)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ viewMode: 'compact' })}
+                  className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all cursor-pointer ${
+                    settings.viewMode === 'compact'
+                      ? 'bg-[#00B8C4] text-white shadow-xs'
+                      : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600'
+                  }`}
+                >
+                  <ListIconLucide className="w-3.5 h-3.5" />
+                  <span>مدمج سريع (Compact)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Themes & Visual Color Palettes */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-[#00B8C4]" />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    مظهر التطبيق ونظام الألوان:
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-400">
+                  انقر لاختيار المظهر المفضل
+                </span>
+              </div>
+
+              {/* Theme Palettes Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {THEME_PRESETS.map((theme) => {
+                  const isSelected = (settings.themeId || 'beige') === theme.id;
+                  return (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => updateSettings({ themeId: theme.id })}
+                      className={`p-3 rounded-2xl border text-right transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? 'border-2 shadow-sm'
+                          : 'border-slate-200 dark:border-slate-700/80 bg-white/70 dark:bg-slate-800/30 hover:bg-white dark:hover:bg-slate-800'
+                      }`}
+                      style={{
+                        borderColor: isSelected ? theme.primary : undefined,
+                        backgroundColor: isSelected ? (settings.darkMode ? theme.darkCard : theme.accentLight) : undefined,
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-1.5 mb-2">
+                        <div className="min-w-0">
+                          <span className="text-xs font-black text-slate-900 dark:text-white block truncate">
+                            {theme.name}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block truncate mt-0.5">
+                            {theme.description}
+                          </span>
+                        </div>
+                        {isSelected && (
+                          <div 
+                            className="w-5 h-5 rounded-full text-white flex items-center justify-center shrink-0 shadow-xs"
+                            style={{ backgroundColor: theme.primary }}
+                          >
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Swatches preview showing the entire harmonious palette */}
+                      <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                        <span className="text-[9px] text-slate-400 font-medium">تناسق الدرجات:</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-0.5 p-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: theme.primary }} title={`اللون المميز: ${theme.primary}`} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: theme.navbar }} title={`الشريط العلوي: ${theme.navbar}`} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: theme.bg }} title={`الخلفية: ${theme.bg}`} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: theme.text }} title={`النصوص: ${theme.text}`} />
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Design Styles (انسيابي ناعم / هندسي صارم / أزرار بارزة) */}
+              <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/60">
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  نمط تصميم وحواف الواجهة:
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'modern', label: 'انسيابي ناعم', desc: 'زوايا دائرية حديثة' },
+                    { id: 'sharp', label: 'هندسي صارم', desc: 'حواف حادة تباين عالي' },
+                    { id: 'tactile', label: 'أزرار بارزة', desc: 'مجسمة للميدان' },
+                  ].map((style) => {
+                    const isSelected = (settings.designStyle || 'modern') === style.id;
+                    return (
+                      <button
+                        key={style.id}
+                        type="button"
+                        onClick={() => updateSettings({ designStyle: style.id as DesignStyle })}
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-[#00B8C4] bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold shadow-2xs'
+                            : 'border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:bg-white'
+                        }`}
+                      >
+                        <span className="block text-[11px] font-bold">{style.label}</span>
+                        <span className="block text-[9px] text-slate-400 mt-0.5">{style.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -279,7 +519,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     setIsEditingPresets(true);
                   }
                 }}
-                className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                className="text-xs text-[#00B8C4] font-semibold hover:underline"
               >
                 {isEditingPresets ? 'حفظ الأرقام' : 'تخصيص'}
               </button>
@@ -319,89 +559,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Section 4: Data & Backup */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              البيانات والتصدير والنسخ الاحتياطي
+              النسخ الاحتياطي واستعادة البيانات (Backup & Restore)
             </h4>
 
             {importStatus && (
-              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-300 text-center font-medium">
+              <div className="p-2.5 rounded-xl bg-[#E6F9FA] dark:bg-slate-800 border border-[#00B8C4]/30 text-xs text-[#00B8C4] text-center font-medium">
                 {importStatus}
               </div>
             )}
 
-            {/* Export Center Trigger Banner */}
-            {onOpenExportModal && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenExportModal();
-                }}
-                className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-between text-right shadow-md shadow-blue-500/20 active:scale-98 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold block">
-                      تصدير ومشاركة تقرير (PDF / PNG)
-                    </span>
-                    <span className="text-[10px] text-blue-100 block">
-                      حفظ كملف PDF رسمي أو صورة PNG للمشاركة عبر واتساب
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 bg-white/20 py-1 px-2.5 rounded-lg text-xs font-bold">
-                  <span>فتح</span>
-                  <ImageIcon className="w-3.5 h-3.5" />
-                </div>
-              </button>
-            )}
-
             <div className="grid grid-cols-2 gap-2">
-              {/* Export CSV */}
-              <button
-                type="button"
-                onClick={exportActiveListCSV}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-right hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-              >
-                <FileSpreadsheet className="w-5 h-5 text-emerald-600 shrink-0" />
-                <div>
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                    تصدير Excel (CSV)
-                  </span>
-                  <span className="text-[10px] text-slate-400 block">
-                    للقائمة الحالية
-                  </span>
-                </div>
-              </button>
-
               {/* Export JSON */}
               <button
                 type="button"
                 onClick={exportAllDataJSON}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-right hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-right hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 cursor-pointer"
               >
-                <Download className="w-5 h-5 text-blue-600 shrink-0" />
+                <Download className="w-5 h-5 text-[#00B8C4] shrink-0" />
                 <div>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                    نسخة كاملة (JSON)
+                    تصدير نسخة كاملة
                   </span>
                   <span className="text-[10px] text-slate-400 block">
-                    حفظ كل القوائم
+                    ملف كود (JSON)
                   </span>
                 </div>
               </button>
-            </div>
 
-            <div className="grid grid-cols-2 gap-2">
               {/* Import JSON */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-right hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-right hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 cursor-pointer"
               >
-                <Upload className="w-5 h-5 text-purple-600 shrink-0" />
+                <Upload className="w-5 h-5 text-[#00B8C4] shrink-0" />
                 <div>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                     استيراد نسخة
@@ -418,7 +609,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onChange={handleFileUpload}
                 className="hidden"
               />
+            </div>
 
+            <div className="pt-1">
               {/* Reset to Sample Data */}
               <button
                 type="button"
@@ -428,15 +621,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClose();
                   }
                 }}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-right hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-right hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-between cursor-pointer"
               >
-                <RotateCcw className="w-5 h-5 text-amber-600 shrink-0" />
-                <div>
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                    نماذج جاهزة
-                  </span>
-                  <span className="text-[10px] text-slate-400 block">
-                    استرجاع عينات الجرد
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4 text-slate-500" />
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    استرجاع نماذج وعينات الجرد التجريبية
                   </span>
                 </div>
               </button>
@@ -446,8 +636,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="h-px bg-slate-100 dark:bg-slate-800" />
 
           {/* Dedication & Contact Card */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50/80 via-indigo-50/50 to-slate-50 dark:from-slate-800/80 dark:via-blue-950/20 dark:to-slate-900 border border-blue-100 dark:border-blue-900/40 text-center space-y-2.5 shadow-xs">
-            <div className="flex items-center justify-center gap-1.5 text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-center space-y-2.5 shadow-xs">
+            <div className="flex items-center justify-center gap-1.5 text-slate-800 dark:text-slate-200 font-bold text-xs sm:text-sm">
               <span>🤲</span>
               <span>نسألكم صالح الدعاء لأخيكم أحمد عبد الغني</span>
             </div>
@@ -471,24 +661,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="text-center sm:text-right">
-            <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium block">
-              نسألكم الدعاء لأخيكم أحمد عبد الغني
-            </span>
-            <a
-              href="https://www.facebook.com/AhmedAbdelghany1976"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              facebook.com/AhmedAbdelghany1976
-            </a>
-          </div>
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto py-2 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-xs shadow-sm"
+            className="w-full sm:w-auto py-2.5 px-6 rounded-xl bg-[#00B8C4] hover:bg-[#009DA8] text-white font-bold text-xs shadow-sm transition-colors border border-[#00B8C4]"
           >
             إغلاق
           </button>

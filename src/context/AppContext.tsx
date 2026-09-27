@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { List, ListItem, AppSettings, DebounceDelay, SortMode, ItemFilterMode } from '../types';
+import { List, ListItem, AppSettings, DebounceDelay, SortMode, ItemFilterMode, AuditAction, HapticIntensity, THEME_PRESETS } from '../types';
 import { INITIAL_LISTS } from '../data/defaultData';
 import { feedback } from '../utils/feedback';
 
@@ -18,6 +18,23 @@ interface AppContextType {
   setSelectedColor: (c: string) => void;
   sortMode: SortMode;
   setSortMode: (s: SortMode) => void;
+
+  // Pocket Lock
+  isPocketLocked: boolean;
+  setIsPocketLocked: (locked: boolean) => void;
+
+  // Quick Toggles
+  toggleSound: () => void;
+  toggleHaptic: () => void;
+
+  // Undo & Audit Trail
+  auditTrail: AuditAction[];
+  canUndo: boolean;
+  lastUndoAction: AuditAction | null;
+  undoLastAction: () => boolean;
+  undoItemAction: (itemId: string) => boolean;
+  getItemLastAction: (itemId: string) => AuditAction | undefined;
+  clearAuditTrail: () => void;
   
   // List actions
   setActiveListId: (id: string) => void;
@@ -30,20 +47,32 @@ interface AppContextType {
 
   // Item actions
   createItem: (itemData: Omit<ListItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  importItemsToList: (
+    itemsData: Array<Omit<ListItem, 'id' | 'createdAt' | 'updatedAt'>>,
+    options?: {
+      targetListId?: string;
+      replaceExisting?: boolean;
+    }
+  ) => number;
   updateItem: (itemId: string, itemData: Partial<Omit<ListItem, 'id' | 'createdAt'>>) => void;
   duplicateItem: (itemId: string) => void;
   deleteItem: (itemId: string) => void;
+  toggleFavoriteItem: (itemId: string) => void;
   incrementItem: (itemId: string, amount?: number) => boolean;
   decrementItem: (itemId: string, amount?: number) => boolean;
   setItemValue: (itemId: string, value: number) => void;
   resetItemValue: (itemId: string) => void;
   resetAllListItems: (listId: string) => void;
+  autoCategorizeActiveList: () => number;
+  moveItemStep: (itemId: string, direction: 'up' | 'down' | 'top' | 'bottom') => void;
+  reorderItems: (sourceIndex: number, destinationIndex: number) => void;
+  moveItemToPosition: (sourceItemId: string, targetItemId: string, placement?: 'before' | 'after') => void;
 
   // Settings
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   
   // Backup / Export
-  exportActiveListCSV: () => void;
+  exportActiveListCSV: (includeZeros?: boolean, includePrices?: boolean) => void;
   exportAllDataJSON: () => void;
   importDataJSON: (jsonString: string) => boolean;
   resetToDefaultData: () => void;
@@ -55,12 +84,17 @@ const STORAGE_KEY_ACTIVE = 'inv_counter_active_v1';
 
 const DEFAULT_SETTINGS: AppSettings = {
   debounceDelay: 100, // 100ms default protection
+  longPressDelay: 1000, // 1000ms default long-press trigger for touch protection
   hapticFeedback: true,
+  hapticIntensity: 'medium',
   soundFeedback: true,
-  quickPresets: [5, 10, 20, 50, 100],
+  quickPresets: [5, 10, 25, 50, 100],
   allowNegative: false,
   keepScreenAwake: false,
   darkMode: false,
+  themeId: 'beige',
+  designStyle: 'modern',
+  viewMode: 'comfortable',
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -101,7 +135,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
-      if (saved) return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...DEFAULT_SETTINGS,
+          ...parsed,
+          themeId: parsed.themeId === 'monochrome' || parsed.themeId === 'sage' || parsed.themeId === 'navy' || parsed.themeId === 'beige' ? parsed.themeId : 'beige',
+          designStyle: parsed.designStyle || 'modern',
+          longPressDelay: typeof parsed.longPressDelay === 'number' ? parsed.longPressDelay : 800,
+          quickPresets: parsed.quickPresets || [5, 10, 25, 50, 100],
+          hapticIntensity: parsed.hapticIntensity || 'medium',
+        };
+      }
     } catch (e) {}
     // Detect system dark mode default
     const prefersDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -114,6 +159,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedColor, setSelectedColor] = useState<string>('all');
   const [sortMode, setSortMode] = useState<SortMode>('manual');
+
+  // Pocket Lock
+  const [isPocketLocked, setIsPocketLocked] = useState(false);
+
+  // Undo / Audit Trail Stack
+  const [auditTrail, setAuditTrail] = useState<AuditAction[]>([]);
 
   // Debounce lock tracking per item
   const lastTapRef = useRef<Map<string, number>>(new Map());
@@ -139,14 +190,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
   }, [activeListId]);
 
-  // Apply Dark mode class to document HTML
+  // Apply Dark mode class to document HTML & Body
   useEffect(() => {
     if (settings.darkMode) {
       document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
     }
   }, [settings.darkMode]);
+
+  // Apply Theme and Design Style attributes to document HTML
+  useEffect(() => {
+    const themeId = settings.themeId || 'beige';
+    const preset = THEME_PRESETS.find(p => p.id === themeId) || THEME_PRESETS[0];
+    const root = document.documentElement;
+    root.setAttribute('data-theme', themeId);
+    
+    const isDark = settings.darkMode;
+    const bg = isDark ? preset.darkBg : preset.bg;
+    const card = isDark ? preset.darkCard : preset.card;
+    const border = isDark ? preset.darkBorder : preset.border;
+    const text = isDark ? preset.darkText : preset.text;
+    const navbar = isDark ? preset.darkNavbar : preset.navbar;
+
+    root.style.setProperty('--app-bg', bg);
+    root.style.setProperty('--app-surface', card);
+    root.style.setProperty('--app-surface-muted', isDark ? preset.darkBorder + '55' : preset.accentLight);
+    root.style.setProperty('--app-border', border);
+    root.style.setProperty('--app-text', text);
+    root.style.setProperty('--app-navbar-bg', navbar);
+    root.style.setProperty('--color-primary', preset.primary);
+    root.style.setProperty('--color-primary-hover', preset.primary);
+    root.style.setProperty('--color-primary-light', preset.accentLight);
+    root.style.setProperty('--color-secondary', preset.secondary);
+    root.style.setProperty('--color-success', preset.success);
+    root.style.setProperty('--color-danger', preset.danger);
+
+    const style = settings.designStyle || 'modern';
+    root.setAttribute('data-style', style);
+  }, [settings.themeId, settings.designStyle, settings.darkMode]);
 
   // Wake lock on screen awake setting
   useEffect(() => {
@@ -159,14 +243,110 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const activeList = lists.find(l => l.id === activeListId) || lists[0];
 
   // Helper to trigger sensory feedback
-  const triggerFeedback = useCallback((type: 'increment' | 'decrement' | 'tap' | 'reset' = 'tap') => {
+  const triggerFeedback = useCallback((type: 'increment' | 'decrement' | 'tap' | 'reset' | 'lock' | 'unlock' = 'tap') => {
     if (settings.soundFeedback) {
       feedback.playClick(type);
     }
     if (settings.hapticFeedback) {
-      feedback.vibrate(type === 'reset' ? [20, 40, 20] : 14);
+      feedback.vibrate(
+        type === 'decrement'
+          ? 'decrement'
+          : (type === 'increment'
+            ? 'increment'
+            : (type === 'reset' ? 'double_warning' : (type === 'lock' ? 'lock' : 'tap'))),
+        settings.hapticIntensity
+      );
     }
-  }, [settings.soundFeedback, settings.hapticFeedback]);
+  }, [settings.soundFeedback, settings.hapticFeedback, settings.hapticIntensity]);
+
+  // Quick toggles
+  const toggleSound = useCallback(() => {
+    setSettings(prev => {
+      const next = !prev.soundFeedback;
+      if (next) feedback.playClick('tap');
+      return { ...prev, soundFeedback: next };
+    });
+  }, []);
+
+  const toggleHaptic = useCallback(() => {
+    setSettings(prev => {
+      const next = !prev.hapticFeedback;
+      if (next) feedback.vibrate('tap', prev.hapticIntensity);
+      return { ...prev, hapticFeedback: next };
+    });
+  }, []);
+
+  // Record audit step
+  const addAuditAction = useCallback((action: Omit<AuditAction, 'id' | 'timestamp'>) => {
+    const newAction: AuditAction = {
+      ...action,
+      id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: Date.now(),
+    };
+    setAuditTrail(prev => [newAction, ...prev].slice(0, 60)); // Keep last 60 actions
+  }, []);
+
+  // Undo last counting action
+  const undoLastAction = useCallback((): boolean => {
+    if (auditTrail.length === 0) return false;
+    const [actionToUndo, ...remaining] = auditTrail;
+
+    setLists(prev => prev.map(l => {
+      if (l.id !== actionToUndo.listId) return l;
+      return {
+        ...l,
+        items: l.items.map(item => {
+          if (item.id !== actionToUndo.itemId) return item;
+          return {
+            ...item,
+            value: actionToUndo.previousValue,
+            updatedAt: Date.now(),
+          };
+        }),
+        updatedAt: Date.now(),
+      };
+    }));
+
+    setAuditTrail(remaining);
+    triggerFeedback('reset');
+    return true;
+  }, [auditTrail, triggerFeedback]);
+
+  // Undo specific item's last action
+  const undoItemAction = useCallback((itemId: string): boolean => {
+    const actionIndex = auditTrail.findIndex(a => a.itemId === itemId);
+    if (actionIndex === -1) return false;
+
+    const actionToUndo = auditTrail[actionIndex];
+    setLists(prev => prev.map(l => {
+      if (l.id !== actionToUndo.listId) return l;
+      return {
+        ...l,
+        items: l.items.map(item => {
+          if (item.id !== actionToUndo.itemId) return item;
+          return {
+            ...item,
+            value: actionToUndo.previousValue,
+            updatedAt: Date.now(),
+          };
+        }),
+        updatedAt: Date.now(),
+      };
+    }));
+
+    // Remove this specific action from audit trail
+    setAuditTrail(prev => prev.filter((_, idx) => idx !== actionIndex));
+    triggerFeedback('reset');
+    return true;
+  }, [auditTrail, triggerFeedback]);
+
+  const getItemLastAction = useCallback((itemId: string): AuditAction | undefined => {
+    return auditTrail.find(a => a.itemId === itemId);
+  }, [auditTrail]);
+
+  const clearAuditTrail = useCallback(() => {
+    setAuditTrail([]);
+  }, []);
 
   // Anti-double-tap debounce check
   const checkDebounce = useCallback((itemId: string): boolean => {
@@ -293,8 +473,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Item actions
   const createItem = useCallback((itemData: Omit<ListItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!activeListId) return;
+
     const newItem: ListItem = {
       ...itemData,
+      color: itemData.color || 'emerald',
       id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -310,6 +492,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
     triggerFeedback('tap');
   }, [activeListId, triggerFeedback]);
+
+  // Batch import items into a list (append or replace)
+  const importItemsToList = useCallback((
+    itemsData: Array<Omit<ListItem, 'id' | 'createdAt' | 'updatedAt'>>,
+    options?: {
+      targetListId?: string;
+      replaceExisting?: boolean;
+    }
+  ): number => {
+    const listIdToUse = options?.targetListId || activeListId;
+    if (!listIdToUse || itemsData.length === 0) return 0;
+
+    const timestamp = Date.now();
+    const newItems: ListItem[] = itemsData.map((item, index) => {
+      return {
+        ...item,
+        color: item.color || 'emerald',
+        unit: item.unit?.trim() || 'قطعة',
+        id: `item-${timestamp}-${index}-${Math.random().toString(36).slice(2, 7)}`,
+        createdAt: timestamp + index,
+        updatedAt: timestamp + index,
+      };
+    });
+
+    setLists(prev => prev.map(l => {
+      if (l.id !== listIdToUse) return l;
+
+      const finalItems = options?.replaceExisting
+        ? newItems
+        : [...newItems, ...l.items];
+
+      return {
+        ...l,
+        items: finalItems,
+        updatedAt: Date.now(),
+      };
+    }));
+
+    triggerFeedback('increment');
+    return newItems.length;
+  }, [activeListId, triggerFeedback]);
+
+  // Bulk auto-categorize stub (kept for interface compatibility)
+  const autoCategorizeActiveList = useCallback((): number => {
+    return 0;
+  }, []);
 
   const updateItem = useCallback((itemId: string, itemData: Partial<Omit<ListItem, 'id' | 'createdAt'>>) => {
     setLists(prev => prev.map(l => {
@@ -369,9 +597,137 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     triggerFeedback('reset');
   }, [activeListId, triggerFeedback]);
 
+  // Toggle favorite star on an item
+  const toggleFavoriteItem = useCallback((itemId: string) => {
+    if (!activeListId) return;
+
+    setLists(prev => prev.map(l => {
+      if (l.id !== activeListId) return l;
+
+      return {
+        ...l,
+        items: l.items.map(item => {
+          if (item.id !== itemId) return item;
+          return {
+            ...item,
+            isFavorite: !item.isFavorite,
+            updatedAt: Date.now(),
+          };
+        }),
+        updatedAt: Date.now(),
+      };
+    }));
+    triggerFeedback('tap');
+  }, [activeListId, triggerFeedback]);
+
+  // Move an item up, down, top, or bottom in manual order
+  const moveItemStep = useCallback((itemId: string, direction: 'up' | 'down' | 'top' | 'bottom') => {
+    if (!activeListId) return;
+
+    setLists(prev => prev.map(l => {
+      if (l.id !== activeListId) return l;
+
+      const items = [...l.items];
+      const index = items.findIndex(i => i.id === itemId);
+      if (index === -1) return l;
+
+      let targetIndex = index;
+      if (direction === 'up') {
+        targetIndex = Math.max(0, index - 1);
+      } else if (direction === 'down') {
+        targetIndex = Math.min(items.length - 1, index + 1);
+      } else if (direction === 'top') {
+        targetIndex = 0;
+      } else if (direction === 'bottom') {
+        targetIndex = items.length - 1;
+      }
+
+      if (targetIndex === index) return l;
+
+      const [movedItem] = items.splice(index, 1);
+      items.splice(targetIndex, 0, movedItem);
+
+      return {
+        ...l,
+        items,
+        updatedAt: Date.now(),
+      };
+    }));
+
+    setSortMode('manual');
+    triggerFeedback('tap');
+  }, [activeListId, setSortMode, triggerFeedback]);
+
+  // Reorder items by numeric index
+  const reorderItems = useCallback((sourceIndex: number, destinationIndex: number) => {
+    if (!activeListId || sourceIndex === destinationIndex) return;
+
+    setLists(prev => prev.map(l => {
+      if (l.id !== activeListId) return l;
+
+      const items = [...l.items];
+      if (
+        sourceIndex < 0 ||
+        sourceIndex >= items.length ||
+        destinationIndex < 0 ||
+        destinationIndex >= items.length
+      ) {
+        return l;
+      }
+
+      const [movedItem] = items.splice(sourceIndex, 1);
+      items.splice(destinationIndex, 0, movedItem);
+
+      return {
+        ...l,
+        items,
+        updatedAt: Date.now(),
+      };
+    }));
+
+    setSortMode('manual');
+    triggerFeedback('tap');
+  }, [activeListId, setSortMode, triggerFeedback]);
+
+  // Move an item relative to a target item (for Drag and Drop)
+  const moveItemToPosition = useCallback((sourceItemId: string, targetItemId: string, placement: 'before' | 'after' = 'before') => {
+    if (!activeListId || sourceItemId === targetItemId) return;
+
+    setLists(prev => prev.map(l => {
+      if (l.id !== activeListId) return l;
+
+      const items = [...l.items];
+      const sourceIndex = items.findIndex(i => i.id === sourceItemId);
+      const targetIndex = items.findIndex(i => i.id === targetItemId);
+
+      if (sourceIndex === -1 || targetIndex === -1) return l;
+
+      const [movedItem] = items.splice(sourceIndex, 1);
+      
+      const newTargetIndex = items.findIndex(i => i.id === targetItemId);
+      const insertIndex = placement === 'after' ? newTargetIndex + 1 : newTargetIndex;
+      
+      items.splice(insertIndex, 0, movedItem);
+
+      return {
+        ...l,
+        items,
+        updatedAt: Date.now(),
+      };
+    }));
+
+    setSortMode('manual');
+    triggerFeedback('tap');
+  }, [activeListId, setSortMode, triggerFeedback]);
+
   // Increment item
   const incrementItem = useCallback((itemId: string, amount: number = 1): boolean => {
+    if (isPocketLocked) return false;
     if (!checkDebounce(itemId)) return false;
+
+    let previousVal = 0;
+    let targetName = '';
+    let targetUnit = '';
 
     setLists(prev => prev.map(l => {
       if (l.id !== activeListId) return l;
@@ -379,6 +735,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...l,
         items: l.items.map(item => {
           if (item.id !== itemId) return item;
+          previousVal = item.value;
+          targetName = item.name;
+          targetUnit = item.unit || '';
           const nextVal = item.value + amount;
           return {
             ...item,
@@ -390,13 +749,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }));
 
+    addAuditAction({
+      itemId,
+      listId: activeListId,
+      itemName: targetName,
+      itemUnit: targetUnit,
+      actionType: 'increment',
+      diff: amount,
+      previousValue: previousVal,
+      newValue: previousVal + amount,
+    });
+
     triggerFeedback('increment');
     return true;
-  }, [activeListId, checkDebounce, triggerFeedback]);
+  }, [activeListId, checkDebounce, isPocketLocked, triggerFeedback, addAuditAction]);
 
   // Decrement item
   const decrementItem = useCallback((itemId: string, amount: number = 1): boolean => {
+    if (isPocketLocked) return false;
     if (!checkDebounce(itemId)) return false;
+
+    let previousVal = 0;
+    let targetName = '';
+    let targetUnit = '';
+    let finalNextVal = 0;
 
     setLists(prev => prev.map(l => {
       if (l.id !== activeListId) return l;
@@ -404,10 +780,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...l,
         items: l.items.map(item => {
           if (item.id !== itemId) return item;
+          previousVal = item.value;
+          targetName = item.name;
+          targetUnit = item.unit || '';
           let nextVal = item.value - amount;
           if (!settings.allowNegative && nextVal < 0) {
             nextVal = 0;
           }
+          finalNextVal = nextVal;
           return {
             ...item,
             value: nextVal,
@@ -418,16 +798,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }));
 
+    addAuditAction({
+      itemId,
+      listId: activeListId,
+      itemName: targetName,
+      itemUnit: targetUnit,
+      actionType: 'decrement',
+      diff: -amount,
+      previousValue: previousVal,
+      newValue: finalNextVal,
+    });
+
     triggerFeedback('decrement');
     return true;
-  }, [activeListId, checkDebounce, settings.allowNegative, triggerFeedback]);
+  }, [activeListId, checkDebounce, isPocketLocked, settings.allowNegative, triggerFeedback, addAuditAction]);
 
   // Set direct item value
   const setItemValue = useCallback((itemId: string, value: number) => {
+    if (isPocketLocked) return;
     let finalVal = Number.isFinite(value) ? value : 0;
     if (!settings.allowNegative && finalVal < 0) {
       finalVal = 0;
     }
+
+    let previousVal = 0;
+    let targetName = '';
+    let targetUnit = '';
 
     setLists(prev => prev.map(l => {
       if (l.id !== activeListId) return l;
@@ -435,6 +831,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...l,
         items: l.items.map(item => {
           if (item.id !== itemId) return item;
+          previousVal = item.value;
+          targetName = item.name;
+          targetUnit = item.unit || '';
           return {
             ...item,
             value: finalVal,
@@ -445,17 +844,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }));
 
+    addAuditAction({
+      itemId,
+      listId: activeListId,
+      itemName: targetName,
+      itemUnit: targetUnit,
+      actionType: 'set',
+      diff: finalVal - previousVal,
+      previousValue: previousVal,
+      newValue: finalVal,
+    });
+
     triggerFeedback('tap');
-  }, [activeListId, settings.allowNegative, triggerFeedback]);
+  }, [activeListId, isPocketLocked, settings.allowNegative, triggerFeedback, addAuditAction]);
 
   // Reset single item counter
   const resetItemValue = useCallback((itemId: string) => {
+    if (isPocketLocked) return;
+
+    let previousVal = 0;
+    let targetName = '';
+    let targetUnit = '';
+
     setLists(prev => prev.map(l => {
       if (l.id !== activeListId) return l;
       return {
         ...l,
         items: l.items.map(item => {
           if (item.id !== itemId) return item;
+          previousVal = item.value;
+          targetName = item.name;
+          targetUnit = item.unit || '';
           return {
             ...item,
             value: 0,
@@ -465,11 +884,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: Date.now(),
       };
     }));
+
+    addAuditAction({
+      itemId,
+      listId: activeListId,
+      itemName: targetName,
+      itemUnit: targetUnit,
+      actionType: 'reset',
+      diff: -previousVal,
+      previousValue: previousVal,
+      newValue: 0,
+    });
+
     triggerFeedback('reset');
-  }, [activeListId, triggerFeedback]);
+  }, [activeListId, isPocketLocked, triggerFeedback, addAuditAction]);
 
   // Batch reset all counters in current list
   const resetAllListItems = useCallback((listId: string) => {
+    if (isPocketLocked) return;
     setLists(prev => prev.map(l => {
       if (l.id !== listId) return l;
       return {
@@ -483,24 +915,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }));
     triggerFeedback('reset');
-  }, [triggerFeedback]);
+  }, [isPocketLocked, triggerFeedback]);
 
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
   }, []);
 
   // Export Active List to CSV (Excel compatible with UTF-8 BOM)
-  const exportActiveListCSV = useCallback(() => {
+  const exportActiveListCSV = useCallback((includeZeros = false, includePrices = false) => {
     if (!activeList) return;
-    const header = ['اسم البند', 'الكمية', 'وحدة القياس', 'التصنيف', 'ملاحظات', 'تاريخ آخر تعديل'];
-    const rows = activeList.items.map(item => [
-      `"${item.name.replace(/"/g, '""')}"`,
-      item.value,
-      `"${(item.unit || '').replace(/"/g, '""')}"`,
-      `"${(item.category || '').replace(/"/g, '""')}"`,
-      `"${(item.notes || '').replace(/"/g, '""')}"`,
-      `"${new Date(item.updatedAt).toLocaleString('ar-EG')}"`
-    ]);
+    const header = includePrices
+      ? ['اسم البند', 'الكمية', 'وحدة القياس', 'سعر الوحدة', 'إجمالي القيمة', 'ملاحظات', 'تاريخ آخر تعديل']
+      : ['اسم البند', 'الكمية', 'وحدة القياس', 'ملاحظات', 'تاريخ آخر تعديل'];
+
+    const targetItems = includeZeros 
+      ? activeList.items 
+      : activeList.items.filter(item => item.value > 0);
+
+    const rows = targetItems.map(item => {
+      const base = [
+        `"${item.name.replace(/"/g, '""')}"`,
+        item.value,
+        `"${(item.unit || '').replace(/"/g, '""')}"`,
+      ];
+      if (includePrices) {
+        base.push(
+          item.price !== undefined && item.price !== null ? item.price.toString() : '',
+          item.price !== undefined && item.price !== null ? (item.value * item.price).toFixed(2) : ''
+        );
+      }
+      base.push(
+        `"${(item.notes || '').replace(/"/g, '""')}"`,
+        `"${new Date(item.updatedAt).toLocaleString('ar-EG')}"`
+      );
+      return base;
+    });
 
     const csvContent = '\uFEFF' + [header.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -589,14 +1038,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reorderLists,
         moveListStep,
         createItem,
+        importItemsToList,
         updateItem,
         duplicateItem,
         deleteItem,
+        toggleFavoriteItem,
         incrementItem,
         decrementItem,
         setItemValue,
         resetItemValue,
         resetAllListItems,
+        autoCategorizeActiveList,
+        moveItemStep,
+        reorderItems,
+        moveItemToPosition,
+        isPocketLocked,
+        setIsPocketLocked,
+        toggleSound,
+        toggleHaptic,
+        auditTrail,
+        canUndo: auditTrail.length > 0,
+        lastUndoAction: auditTrail[0] || null,
+        undoLastAction,
+        undoItemAction,
+        getItemLastAction,
+        clearAuditTrail,
         updateSettings,
         exportActiveListCSV,
         exportAllDataJSON,
